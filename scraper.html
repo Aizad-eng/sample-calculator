@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daraz Flash Sale Scraper</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            background: #0f172a;
+            min-height: 100vh;
+            padding: 20px;
+            color: #f1f5f9;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px;
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            font-size: 36px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #cbd5e1;
+            font-size: 16px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            background: rgba(30, 41, 59, 0.8);
+            padding: 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px;
+            background: transparent;
+            border: none;
+            color: #cbd5e1;
+            cursor: pointer;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            background: rgba(139, 92, 246, 0.2);
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(20px);
+            padding: 30px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            color: #cbd5e1;
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 16px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #f1f5f9;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+
+        .button {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(139, 92, 246, 0.3);
+        }
+
+        .button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status-box {
+            margin-top: 25px;
+            padding: 20px;
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            display: none;
+        }
+
+        .status-box.show {
+            display: block;
+        }
+
+        .status-box.success {
+            border-color: rgba(74, 222, 128, 0.5);
+            background: rgba(74, 222, 128, 0.1);
+        }
+
+        .status-box.error {
+            border-color: rgba(248, 113, 113, 0.5);
+            background: rgba(248, 113, 113, 0.1);
+        }
+
+        .status-box.loading {
+            border-color: rgba(139, 92, 246, 0.5);
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #8b5cf6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: rgba(15, 23, 42, 0.6);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-label {
+            color: #94a3b8;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .data-table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        .data-table th {
+            background: rgba(15, 23, 42, 0.8);
+            padding: 12px;
+            text-align: left;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid rgba(139, 92, 246, 0.3);
+        }
+
+        .data-table td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 14px;
+        }
+
+        .data-table tr:hover {
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .download-btn {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            margin: 5px;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .delete-btn {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            margin: 5px;
+        }
+
+        .delete-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+        }
+
+        .delete-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .instructions {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .instructions h3 {
+            color: #60a5fa;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .instructions ol {
+            margin-left: 20px;
+            color: #cbd5e1;
+            line-height: 1.8;
+        }
+
+        .instructions code {
+            background: rgba(15, 23, 42, 0.8);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+
+        .loading-text {
+            margin-top: 10px;
+            color: #cbd5e1;
+            font-size: 14px;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 30px;
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px 0;
+            border: 2px solid rgba(139, 92, 246, 0.3);
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #8b5cf6 0%, #3b82f6 100%);
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .progress-details {
+            margin-top: 10px;
+            color: #cbd5e1;
+            font-size: 14px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🛍️ Daraz Flash Sale Scraper</h1>
+            <p class="subtitle">Paste cookies → Run scraper → Analyze data</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('scraper')">🚀 Run Scraper</button>
+            <button class="tab" onclick="switchTab('history')">📂 History</button>
+            <button class="tab" onclick="switchTab('hunting')">🔥 Product Hunting</button>
+            <button class="tab" onclick="switchTab('analytics')">📈 Analytics</button>
+        </div>
+
+        <!-- Scraper Tab -->
+        <div id="scraper" class="tab-content active">
+            <div class="instructions">
+                <h3>📝 How to get cookies:</h3>
+                <ol>
+                    <li>Go to <code>https://pages.daraz.pk</code> in Chrome</li>
+                    <li>Press <code>F12</code> to open Developer Tools</li>
+                    <li>Go to <strong>Application</strong> tab → <strong>Cookies</strong> → <code>https://pages.daraz.pk</code></li>
+                    <li>Copy ALL cookies (click first cookie, scroll down, shift+click last cookie)</li>
+                    <li>Paste them in the box below (format: <code>name=value; name2=value2;</code>)</li>
+                </ol>
+            </div>
+
+            <div class="form-group">
+                <label for="cookies">Paste Your Cookies Here</label>
+                <textarea id="cookies" placeholder="miidlaz=value; lzd_cid=value; _m_h5_tk=value; ..."></textarea>
+            </div>
+
+            <button class="button" onclick="runScraper()" id="runBtn">
+                🚀 Run Scraper (Products - 20 pages)
+            </button>
+
+            <button class="button" onclick="runSellersScraper()" id="sellersBtn" style="margin-top: 15px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                👥 Run Sellers Scraper (UNLIMITED - Until No Data!)
+            </button>
+
+            <div id="statusBox" class="status-box"></div>
+        </div>
+
+        <!-- History Tab -->
+        <div id="history" class="tab-content">
+            <h2 style="margin-bottom: 20px;">📂 Scraping History</h2>
+            <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+                <button class="button" onclick="loadHistory()" style="max-width: 250px;">
+                    🔄 Refresh History
+                </button>
+                <a href="/api/download/master" class="button" style="max-width: 250px; text-align: center; text-decoration: none; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                    ⬇️ Products Master CSV
+                </a>
+                <a href="/api/download/sellers" class="button" style="max-width: 250px; text-align: center; text-decoration: none; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                    ⬇️ Sellers Master CSV
+                </a>
+            </div>
+            <div id="historyContent"></div>
+        </div>
+
+        <!-- Product Hunting Tab -->
+        <div id="hunting" class="tab-content">
+            <h2 style="margin-bottom: 20px;">🔥 Product Hunting Analytics</h2>
+            <p style="color: #cbd5e1; margin-bottom: 20px;">Find hot products that appear frequently in flash sales with high sales volume</p>
+            <button class="button" onclick="loadProductHunting()" style="max-width: 300px; margin-bottom: 20px;">
+                Load Product Hunting Data
+            </button>
+            <div id="huntingContent"></div>
+        </div>
+
+        <!-- Analytics Tab -->
+        <div id="analytics" class="tab-content">
+            <h2 style="margin-bottom: 20px;">📈 Analytics Dashboard</h2>
+            <button class="button" onclick="loadAnalytics()" style="max-width: 300px; margin-bottom: 20px;">
+                Load Analytics
+            </button>
+            <div id="analyticsContent"></div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            // Auto-load data when switching tabs
+            if (tabName === 'history') loadHistory();
+            if (tabName === 'analytics') loadAnalytics();
+            if (tabName === 'hunting') loadProductHunting();
+        }
+
+        async function loadProductHunting() {
+            const content = document.getElementById('huntingContent');
+            content.innerHTML = '<div class="spinner"></div> Loading product hunting data...';
+
+            try {
+                const response = await fetch('/api/product-hunting');
+                const data = await response.json();
+
+                if (data.hot_products && data.hot_products.length > 0) {
+                    let html = `
+                        <h3 style="margin: 30px 0 15px; color: #f59e0b;">🔥 HOT PRODUCTS (Frequent Flash Sale Appearances)</h3>
+                        <p style="color: #cbd5e1; margin-bottom: 15px; font-size: 14px;">Products that appear most frequently in flash sales = proven demand!</p>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Appearances</th>
+                                    <th>Total Sales</th>
+                                    <th>Avg Discount</th>
+                                    <th>Latest Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+
+                    data.hot_products.forEach(product => {
+                        const title = product.title.length > 60 ? product.title.substring(0, 60) + '...' : product.title;
+                        html += `
+                            <tr>
+                                <td><strong>${title}</strong></td>
+                                <td><span style="background: #8b5cf6; padding: 4px 8px; border-radius: 4px; font-weight: 700;">${product.appearance_count}x</span></td>
+                                <td>${product.total_sales_sum || 'N/A'}</td>
+                                <td>${product.avg_discount ? Math.round(product.avg_discount) + '%' : 'N/A'}</td>
+                                <td>Rs. ${product.latest_price || 'N/A'}</td>
+                            </tr>
+                        `;
+                    });
+
+                    html += `</tbody></table>
+                        
+                        <h3 style="margin: 40px 0 15px; color: #10b981;">💰 TOP SELLERS (By Total Sales Volume)</h3>
+                        <p style="color: #cbd5e1; margin-bottom: 15px; font-size: 14px;">Products with highest cumulative sales across all appearances</p>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Total Sales</th>
+                                    <th>Appearances</th>
+                                    <th>Avg Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+
+                    if (data.top_sellers && data.top_sellers.length > 0) {
+                        data.top_sellers.forEach(product => {
+                            const title = product.title.length > 60 ? product.title.substring(0, 60) + '...' : product.title;
+                            html += `
+                                <tr>
+                                    <td><strong>${title}</strong></td>
+                                    <td style="color: #10b981; font-weight: 700;">${product.total_sales_sum}</td>
+                                    <td>${product.appearance_count}x</td>
+                                    <td>Rs. ${product.avg_price ? Math.round(product.avg_price) : 'N/A'}</td>
+                                </tr>
+                            `;
+                        });
+                    }
+
+                    html += `</tbody></table>
+                    
+                        <h3 style="margin: 40px 0 15px; color: #3b82f6;">📂 TRENDING CATEGORIES</h3>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Category ID</th>
+                                    <th>Products</th>
+                                    <th>Total Sales</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+
+                    if (data.trending_categories && data.trending_categories.length > 0) {
+                        data.trending_categories.forEach(cat => {
+                            html += `
+                                <tr>
+                                    <td>Category ${cat.category_id}</td>
+                                    <td>${cat.product_count}</td>
+                                    <td>${cat.total_sales || 'N/A'}</td>
+                                </tr>
+                            `;
+                        });
+                    }
+
+                    html += '</tbody></table>';
+                    
+                    html += `
+                        <div style="margin-top: 30px; padding: 20px; background: rgba(139, 92, 246, 0.1); border-radius: 12px; border: 1px solid rgba(139, 92, 246, 0.3);">
+                            <h4 style="color: #8b5cf6; margin-bottom: 10px;">💡 Product Hunting Tips:</h4>
+                            <ul style="color: #cbd5e1; line-height: 2;">
+                                <li><strong>High Appearances + High Sales</strong> = Proven winners with consistent demand</li>
+                                <li><strong>Recent Last Seen</strong> = Currently trending products</li>
+                                <li><strong>DazMall Stores</strong> = More reliable sellers, check sellers CSV</li>
+                                <li><strong>Multiple appearances</strong> = Sellers keep restocking = profitable product</li>
+                            </ul>
+                        </div>
+                    `;
+                    
+                    content.innerHTML = html;
+                } else {
+                    content.innerHTML = '<p style="color: #94a3b8; text-align: center; padding: 40px;">No product hunting data yet. Run the scraper multiple times to see patterns!</p>';
+                }
+            } catch (error) {
+                content.innerHTML = `<p style="color: #f87171;">Error loading product hunting data: ${error.message}</p>`;
+            }
+        }
+
+        async function runSellersScraper() {
+            const cookies = document.getElementById('cookies').value.trim();
+            const statusBox = document.getElementById('statusBox');
+            const sellersBtn = document.getElementById('sellersBtn');
+            const runBtn = document.getElementById('runBtn');
+
+            if (!cookies) {
+                showStatus('error', '❌ Please paste your cookies first!');
+                return;
+            }
+
+            sellersBtn.disabled = true;
+            runBtn.disabled = true;
+            sellersBtn.textContent = '⏳ Scraping Sellers...';
+            
+            showStatus('loading', `
+                <h3 style="margin-bottom: 15px;">👥 Starting UNLIMITED Sellers Scraper...</h3>
+                <p style="color: #f59e0b; margin-bottom: 15px;">⚠️ This will scrape UNTIL NO MORE DATA - may take 5-20 minutes!</p>
+                <div class="progress-container">
+                    <div id="progressBar" class="progress-bar" style="width: 0%">0%</div>
+                </div>
+                <div id="progressDetails" class="progress-details">Initializing...</div>
+            `);
+
+            try {
+                // Start sellers scraping
+                const response = await fetch('/api/scrape-sellers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cookies })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.sessionId) {
+                    showStatus('error', `❌ Error: ${data.error || 'Failed to start sellers scraping'}`);
+                    sellersBtn.disabled = false;
+                    runBtn.disabled = false;
+                    sellersBtn.textContent = '👥 Run Sellers Scraper (UNLIMITED)';
+                    return;
+                }
+
+                // Listen to progress updates
+                const eventSource = new EventSource(`/api/scrape-progress/${data.sessionId}`);
+                
+                eventSource.onmessage = (event) => {
+                    const progress = JSON.parse(event.data);
+                    
+                    if (progress.status === 'connected') return;
+                    
+                    const progressBar = document.getElementById('progressBar');
+                    const progressDetails = document.getElementById('progressDetails');
+                    
+                    // For unlimited mode, show as pulsing animation
+                    if (progressBar && progress.mode === 'sellers') {
+                        progressBar.style.width = '100%';
+                        progressBar.textContent = `Page ${progress.page}`;
+                        progressBar.style.animation = 'pulse 2s infinite';
+                    }
+                    
+                    if (progressDetails) {
+                        progressDetails.innerHTML = `
+                            📄 Page ${progress.page} (scraping until no data...) • 
+                            🛍️ ${progress.productsScraped} products found<br>
+                            ${progress.message}
+                        `;
+                    }
+                    
+                    if (progress.status === 'complete') {
+                        eventSource.close();
+                        
+                        let html = `
+                            <h3 style="color: #4ade80; margin-bottom: 15px;">✅ Sellers Scraping Complete!</h3>
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <div class="stat-label">Pages Scraped</div>
+                                    <div class="stat-value">${progress.page || 0}</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-label">Products Found</div>
+                                    <div class="stat-value">${progress.productsScraped || 0}</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-label">Unique Sellers</div>
+                                    <div class="stat-value">${progress.uniqueSellers || 0}</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-label">New Sellers</div>
+                                    <div class="stat-value" style="color: #10b981;">${progress.newSellers || 0}</div>
+                                </div>
+                            </div>
+                            <p style="color: #cbd5e1; margin: 20px 0; text-align: center;">
+                                Updated ${progress.updatedSellers || 0} existing sellers • Took ${progress.timeTaken || 0}s
+                            </p>
+                            <div style="margin-top: 20px;">
+                                <a href="/api/download/sellers" class="button" style="max-width: 400px; text-decoration: none; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                                    ⬇️ Download Sellers Master CSV
+                                </a>
+                            </div>
+                        `;
+                        showStatus('success', html);
+                        sellersBtn.disabled = false;
+                        runBtn.disabled = false;
+                        sellersBtn.textContent = '👥 Run Sellers Scraper (UNLIMITED)';
+                    } else if (progress.status === 'error') {
+                        eventSource.close();
+                        showStatus('error', `❌ Error: ${progress.message}`);
+                        sellersBtn.disabled = false;
+                        runBtn.disabled = false;
+                        sellersBtn.textContent = '👥 Run Sellers Scraper (UNLIMITED)';
+                    }
+                };
+
+                eventSource.onerror = () => {
+                    eventSource.close();
+                    showStatus('error', '❌ Connection lost. Please check your network.');
+                    sellersBtn.disabled = false;
+                    runBtn.disabled = false;
+                    sellersBtn.textContent = '👥 Run Sellers Scraper (UNLIMITED)';
+                };
+
+            } catch (error) {
+                showStatus('error', `❌ Network Error: ${error.message}`);
+                sellersBtn.disabled = false;
+                runBtn.disabled = false;
+                sellersBtn.textContent = '👥 Run Sellers Scraper (UNLIMITED)';
+            }
+        }
+
+        async function runScraper() {
+            const cookies = document.getElementById('cookies').value.trim();
+            const statusBox = document.getElementById('statusBox');
+            const runBtn = document.getElementById('runBtn');
+
+            if (!cookies) {
+                showStatus('error', '❌ Please paste your cookies first!');
+                return;
+            }
+
+            runBtn.disabled = true;
+            runBtn.textContent = '⏳ Scraping...';
+            
+            showStatus('loading', `
+                <h3 style="margin-bottom: 15px;">🚀 Starting scraper...</h3>
+                <div class="progress-container">
+                    <div id="progressBar" class="progress-bar" style="width: 0%">0%</div>
+                </div>
+                <div id="progressDetails" class="progress-details">Initializing...</div>
+            `);
+
+            try {
+                // Start scraping
+                const response = await fetch('/api/scrape', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cookies })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.sessionId) {
+                    showStatus('error', `❌ Error: ${data.error || 'Failed to start scraping'}`);
+                    runBtn.disabled = false;
+                    runBtn.textContent = '🚀 Run Scraper';
+                    return;
+                }
+
+                // Listen to progress updates
+                const eventSource = new EventSource(`/api/scrape-progress/${data.sessionId}`);
+                
+                eventSource.onmessage = (event) => {
+                    const progress = JSON.parse(event.data);
+                    
+                    if (progress.status === 'connected') return;
+                    
+                    const percentage = Math.round((progress.page / progress.totalPages) * 100);
+                    const progressBar = document.getElementById('progressBar');
+                    const progressDetails = document.getElementById('progressDetails');
+                    
+                    if (progressBar) {
+                        progressBar.style.width = percentage + '%';
+                        progressBar.textContent = percentage + '%';
+                    }
+                    
+                    if (progressDetails) {
+                        progressDetails.innerHTML = `
+                            📄 Page ${progress.page}/${progress.totalPages} • 
+                            🛍️ ${progress.productsScraped} products scraped<br>
+                            ${progress.message}
+                        `;
+                    }
+                    
+                    if (progress.status === 'complete') {
+                        eventSource.close();
+                        
+                        let html = `
+                            <h3 style="color: #4ade80; margin-bottom: 15px;">✅ Scraping Complete!</h3>
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <div class="stat-label">Products Scraped</div>
+                                    <div class="stat-value">${progress.productsScraped || 0}</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-label">Pages Scraped</div>
+                                    <div class="stat-value">${progress.page || 0}</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-label">Sellers Updated</div>
+                                    <div class="stat-value">${progress.sellersUpdated || 0}</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-label">Time Taken</div>
+                                    <div class="stat-value">${progress.timeTaken || 0}s</div>
+                                </div>
+                            </div>
+                            <div style="margin-top: 20px;">
+                                <a href="/api/download/latest" class="download-btn">⬇️ Download CSV</a>
+                                <a href="/api/download/master" class="download-btn">⬇️ Master CSV</a>
+                                <a href="/api/download/sellers" class="download-btn">⬇️ Sellers CSV</a>
+                            </div>
+                        `;
+                        showStatus('success', html);
+                        runBtn.disabled = false;
+                        runBtn.textContent = '🚀 Run Scraper';
+                    } else if (progress.status === 'error') {
+                        eventSource.close();
+                        showStatus('error', `❌ Error: ${progress.message}`);
+                        runBtn.disabled = false;
+                        runBtn.textContent = '🚀 Run Scraper';
+                    }
+                };
+
+                eventSource.onerror = () => {
+                    eventSource.close();
+                    showStatus('error', '❌ Connection lost. Please check your network.');
+                    runBtn.disabled = false;
+                    runBtn.textContent = '🚀 Run Scraper';
+                };
+
+            } catch (error) {
+                showStatus('error', `❌ Network Error: ${error.message}`);
+                runBtn.disabled = false;
+                runBtn.textContent = '🚀 Run Scraper';
+            }
+        }
+
+        async function loadHistory() {
+            const content = document.getElementById('historyContent');
+            content.innerHTML = '<div class="spinner"></div> Loading history...';
+
+            try {
+                const response = await fetch('/api/history');
+                const data = await response.json();
+
+                if (data.runs && data.runs.length > 0) {
+                    let html = '<table class="data-table"><thead><tr><th>Run Date</th><th>Products</th><th>Actions</th></tr></thead><tbody>';
+                    
+                    data.runs.forEach(run => {
+                        html += `
+                            <tr id="run-${run.id}">
+                                <td>${new Date(run.run_date).toLocaleString()}</td>
+                                <td>${run.product_count}</td>
+                                <td>
+                                    <a href="/api/download/run/${run.id}" class="download-btn">⬇️ CSV</a>
+                                    <button onclick="deleteRun(${run.id})" class="delete-btn">🗑️ Delete</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    
+                    html += '</tbody></table>';
+                    content.innerHTML = html;
+                } else {
+                    content.innerHTML = '<p style="color: #94a3b8; text-align: center; padding: 40px;">No scraping runs yet. Go run the scraper!</p>';
+                }
+            } catch (error) {
+                content.innerHTML = `<p style="color: #f87171;">Error loading history: ${error.message}</p>`;
+            }
+        }
+
+        async function deleteRun(runId) {
+            if (!confirm('⚠️ Are you sure you want to delete this run?\n\nThis will permanently delete:\n• The scraping run\n• All products from this run\n• This data from master CSV\n\nThis action cannot be undone!')) {
+                return;
+            }
+
+            const row = document.getElementById(`run-${runId}`);
+            const deleteBtn = row.querySelector('.delete-btn');
+            
+            // Disable button
+            deleteBtn.disabled = true;
+            deleteBtn.textContent = '⏳ Deleting...';
+
+            try {
+                const response = await fetch(`/api/run/${runId}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Remove row from table
+                    row.style.backgroundColor = 'rgba(239, 68, 68, 0.2)';
+                    setTimeout(() => {
+                        row.remove();
+                        
+                        // Check if table is now empty
+                        const tbody = document.querySelector('.data-table tbody');
+                        if (!tbody || tbody.children.length === 0) {
+                            document.getElementById('historyContent').innerHTML = 
+                                '<p style="color: #94a3b8; text-align: center; padding: 40px;">No scraping runs yet. Go run the scraper!</p>';
+                        }
+                    }, 300);
+                    
+                    alert(`✅ Successfully deleted!\n\n• Run removed from history\n• ${data.products_deleted} products deleted\n• Data removed from master CSV`);
+                } else {
+                    alert(`❌ Error: ${data.error}`);
+                    deleteBtn.disabled = false;
+                    deleteBtn.textContent = '🗑️ Delete';
+                }
+            } catch (error) {
+                alert(`❌ Network error: ${error.message}`);
+                deleteBtn.disabled = false;
+                deleteBtn.textContent = '🗑️ Delete';
+            }
+        }
+
+        async function loadAnalytics() {
+            const content = document.getElementById('analyticsContent');
+            content.innerHTML = '<div class="spinner"></div> Loading analytics...';
+
+            try {
+                const response = await fetch('/api/analytics');
+                const data = await response.json();
+
+                if (data.total_products > 0) {
+                    let html = `
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-label">Total Products</div>
+                                <div class="stat-value">${data.total_products}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Avg Price</div>
+                                <div class="stat-value">Rs. ${Math.round(data.avg_price)}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Avg Discount</div>
+                                <div class="stat-value">${Math.round(data.avg_discount)}%</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Scraping Runs</div>
+                                <div class="stat-value">${data.total_runs}</div>
+                            </div>
+                        </div>
+                        
+                        <h3 style="margin: 30px 0 15px; color: #cbd5e1;">🔥 Top 10 Best Sellers</h3>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Sales</th>
+                                    <th>Price</th>
+                                    <th>Discount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+
+                    if (data.top_sellers && data.top_sellers.length > 0) {
+                        data.top_sellers.forEach(product => {
+                            const title = product.title.length > 60 ? product.title.substring(0, 60) + '...' : product.title;
+                            html += `
+                                <tr>
+                                    <td>${title}</td>
+                                    <td>${product.total_sales || 'N/A'}</td>
+                                    <td>Rs. ${product.discount_price}</td>
+                                    <td>${product.discount_percentage}%</td>
+                                </tr>
+                            `;
+                        });
+                    }
+
+                    html += '</tbody></table>';
+                    content.innerHTML = html;
+                } else {
+                    content.innerHTML = '<p style="color: #94a3b8; text-align: center; padding: 40px;">No data yet. Run the scraper first!</p>';
+                }
+            } catch (error) {
+                content.innerHTML = `<p style="color: #f87171;">Error loading analytics: ${error.message}</p>`;
+            }
+        }
+
+        function showStatus(type, message) {
+            const statusBox = document.getElementById('statusBox');
+            statusBox.className = `status-box show ${type}`;
+            statusBox.innerHTML = message;
+        }
+    </script>
+</body>
+</html>
